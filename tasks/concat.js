@@ -18,9 +18,12 @@ module.exports = function(grunt) {
     var options = this.options({
       separator: grunt.util.linefeed,
       banner: '',
+      footer: '',
       stripBanners: false,
       process: false
     });
+
+    var separator = grunt.util.normalizelf(options.separator);
 
     // Normalize boolean options that accept options objects.
     if (options.stripBanners === true) { options.stripBanners = {}; }
@@ -29,10 +32,13 @@ module.exports = function(grunt) {
     // Process banner.
     var banner = grunt.template.process(options.banner);
 
+    // Process footer.
+    var footer = grunt.template.process(options.footer);
+
     // Iterate over all src-dest file pairs.
     this.files.forEach(function(f) {
       // Concat banner + specified files.
-      var src = banner + f.src.filter(function(filepath) {
+      var srcs = f.src.filter(function(filepath) {
         // Warn on and remove invalid source files (if nonull was set).
         if (!grunt.file.exists(filepath)) {
           grunt.log.warn('Source file "' + filepath + '" not found.');
@@ -52,10 +58,13 @@ module.exports = function(grunt) {
           src = comment.stripBanner(src, options.stripBanners);
         }
         return src;
-      }).join(grunt.util.normalizelf(options.separator));
+      });
+
+      // Merge banner, source files and footer
+      var merged = [banner].concat(srcs).concat(footer).join(separator);
 
       // Write the destination file.
-      grunt.file.write(f.dest, src);
+      grunt.file.write(f.dest, merged);
 
       // Print a success message.
       grunt.log.writeln('File "' + f.dest + '" created.');
